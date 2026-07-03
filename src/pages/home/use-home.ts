@@ -1,68 +1,106 @@
-import type { ICountDown } from '@/_common/interfaces/icount-down'
-import { ref } from 'vue'
+import { api } from '@/_common/api/api'
+import type { ICountDown } from '@/_common/interfaces/count-down/icount-down'
+import { onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 
+interface IUserEventWithCountdownResponse {
+  event: {
+    id: number
+    name: string
+    description: string
+    date: string
+    userId: number
+  }
+  daysUntil: number
+}
 
 export const useHome = () => {
 
-  const editModalOpen = ref<boolean>(false)
+  const createAndEditModalOpen = ref<boolean>(false)
+  const deleteModalOpen = ref<boolean>(false)
   const selectedCountDown = ref<ICountDown | null>(null)
 
-  const openEditModal = (countDown: ICountDown) => {
+  const countDowns = ref<ICountDown[]>([])
+  const loading = ref<boolean>(false)
+  const error = ref<string>('')
+
+  const router = useRouter();
+
+  const fetchCountDowns = async () => {
+    const userId = localStorage.getItem('userId');
+
+    if (!userId) {
+      router.push('/');
+      return;
+    }
+
+    loading.value = true;
+    error.value = '';
+
+    try {
+      const { data } = await api.get<IUserEventWithCountdownResponse[]>(`/user-event/by-user/${userId}`);
+
+      countDowns.value = data.map((item) => ({
+        event:{
+          id: item.event.id,
+          name: item.event.name,
+          date: item.event.date,
+          description: item.event.description,
+          userId: item.event.userId
+        },
+        daysUntil: item.daysUntil,
+      }));
+    } catch (err) {
+      error.value = 'Erro ao buscar contadores';
+      console.log(err);
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const openDeleteModal = (countDown: ICountDown) => {
     selectedCountDown.value = countDown;
-    editModalOpen.value = true;
+    deleteModalOpen.value = true;
   }
   
-  const closeEditModal = () => {
+  const closeDeleteModal = () => {
     selectedCountDown.value = null;
-    editModalOpen.value = false;
+    deleteModalOpen.value = false;
   }
 
+  const openCreateAndEditModal = (countDown: ICountDown) => {
+    selectedCountDown.value = countDown;
+    createAndEditModalOpen.value = true;
+  }
+  
+  const closeCreateAndEditModal = () => {
+    selectedCountDown.value = null;
+    createAndEditModalOpen.value = false;
+  }
 
-  const contadoresMock: ICountDown[] = [
-    {
-      id: 1,
-      name: 'Aniversário da Maria',
-      date: '2026-08-15',
-      description: 'Contagem regressiva para o aniversário da Maria',
-      daysUntil: 55
-    },
-    {
-      id: 2,
-      name: 'Entrega do projeto',
-      date: '2026-07-10',
-      description: 'Deadline final do projeto da faculdade',
-      daysUntil: 19
-    },
-    {
-      id: 3,
-      name: 'Viagem para Florianópolis',
-      date: '2026-09-01',
-      description: 'Férias de inverno na praia',
-      daysUntil: 72
-    },
-    {
-      id: 4,
-      name: 'Show da banda favorita',
-      date: '2026-07-25',
-      description: 'Show ao vivo no festival local',
-      daysUntil: 34
-    },
-    {
-      id: 5,
-      name: 'Ano novo',
-      date: '2027-01-01',
-      description: 'Virada do ano',
-      daysUntil: 194
-    }
-  ]
+  const onCardClick = (countDown: ICountDown) => {
+    router.push({ path: '/count-down', state: { countDownId: countDown.event.id}})
+  };
 
-
+  onMounted(() => {
+    fetchCountDowns();
+  });
 
   return {
-    contadoresMock,
-    editModalOpen,
-    openEditModal,
-    closeEditModal,
-    selectedCountDown
+    countDowns,
+    loading,
+    error,
+    fetchCountDowns,
+
+    createAndEditModalOpen,
+    openCreateAndEditModal,
+    closeCreateAndEditModal,
+    selectedCountDown,
+
+    deleteModalOpen,
+    openDeleteModal,
+    closeDeleteModal,
+
+    onCardClick
   }
 }

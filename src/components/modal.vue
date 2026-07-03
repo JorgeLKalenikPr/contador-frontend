@@ -24,7 +24,7 @@ import { X } from '@lucide/vue';
             <h1 class="text-lg">{{ title }}</h1>
             <h2 :hidden="!!subTitle">{{ subTitle }}</h2>
           </div>
-          <div @click.left="closeModal">
+          <div @click.left="closeModal" class="cursor-pointer">
             <X />
           </div>
         </div>

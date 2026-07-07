@@ -1,10 +1,12 @@
 import { api } from '@/_common/api/api';
 import type { ICountDown } from '@/_common/interfaces/count-down/icount-down';
+import type { IHoliday } from '@/_common/interfaces/holiday/iholiday';
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
 export const useCountDown = () => {
   const countDown = ref<ICountDown | null>(null);
+  const holiday = ref<IHoliday | null>(null);
   const loading = ref<boolean>(false);
   const error = ref<string>('');
   const router = useRouter();
@@ -21,6 +23,13 @@ export const useCountDown = () => {
     { key: 'months', label: 'Meses' },
     { key: 'days', label: 'Dias' },
   ];
+
+  const isEditable = computed(() => !holiday.value);
+
+  const displayName = computed(() => holiday.value?.name ?? countDown.value?.event.name);
+  const displayDescription = computed(() => holiday.value ? '' : countDown.value?.event.description);
+  const displayDate = computed(() => holiday.value?.date ?? countDown.value?.event.date);
+  const displayDaysUntil = computed(() => holiday.value?.daysUntil ?? countDown.value?.daysUntil ?? 0);
 
   const getCountDown = async (countDownId: number) => {
     loading.value = true;
@@ -48,16 +57,16 @@ export const useCountDown = () => {
   };
 
   const selectedValue = computed(() => {
-    if (!countDown.value?.event.date) return 0;
+    if (!displayDate.value) return 0;
 
-    const target = new Date(countDown.value.event.date).getTime();
+    const target = new Date(displayDate.value).getTime();
     const diffMs = target - now.value.getTime();
 
     if (diffMs <= 0) return 0;
 
     const diffHours = diffMs / 1000 / 60 / 60;
 
-    if (selectedUnit.value === 'days') return countDown.value.daysUntil;
+    if (selectedUnit.value === 'days') return displayDaysUntil.value;
     if (selectedUnit.value === 'hours') return Number(diffHours.toFixed(1));
     if (selectedUnit.value === 'weeks') return Number((diffHours / 24 / 7).toFixed(1));
     if (selectedUnit.value === 'months') return Number((diffHours / 24 / 30).toFixed(1));
@@ -83,6 +92,15 @@ export const useCountDown = () => {
 
   onMounted(async () => {
     const dados = history.state;
+
+    if (dados?.holiday) {
+      holiday.value = dados.holiday;
+
+      intervalId = setInterval(() => {
+        now.value = new Date();
+      }, 1000);
+      return;
+    }
 
     if (!dados?.countDownId) {
       router.push('/');
@@ -113,6 +131,11 @@ export const useCountDown = () => {
     selectedUnit,
     selectedValue,
     selectUnit,
+
+    isEditable,
+    displayName,
+    displayDescription,
+    displayDate,
 
     editModalOpen,
     openEditModal,

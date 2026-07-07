@@ -8,7 +8,7 @@ import { useCreateAndEditCountDown } from './use-create-and-edit-count-down';
   interface Props {
     closeCreateAndEditModal: () => void,
     createAndEditModalOpen: boolean,
-    selectedCountDown?: ICountDown,
+    selectedCountDown: ICountDown | null,
     onSuccess?: () => void
   }
 

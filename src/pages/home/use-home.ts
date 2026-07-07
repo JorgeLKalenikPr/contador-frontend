@@ -1,18 +1,8 @@
 import { api } from '@/_common/api/api'
 import type { ICountDown } from '@/_common/interfaces/count-down/icount-down'
+import type { IHoliday } from '@/_common/interfaces/holiday/iholiday'
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-
-interface IUserEventWithCountdownResponse {
-  event: {
-    id: number
-    name: string
-    description: string
-    date: string
-    userId: number
-  }
-  daysUntil: number
-}
 
 export const useHome = () => {
 
@@ -24,21 +14,21 @@ export const useHome = () => {
   const loading = ref<boolean>(false)
   const error = ref<string>('')
 
+  const nextHoliday = ref<IHoliday | null>(null)
+  const holidayLoading = ref<boolean>(false)
+
   const router = useRouter();
 
   const fetchCountDowns = async () => {
     const userId = localStorage.getItem('userId');
 
-    if (!userId) {
-      router.push('/');
-      return;
-    }
+    if (!userId) return;
 
     loading.value = true;
     error.value = '';
 
     try {
-      const { data } = await api.get<IUserEventWithCountdownResponse[]>(`/user-event/by-user/${userId}`);
+      const { data } = await api.get<ICountDown[]>(`/user-event/by-user/${userId}`);
 
       countDowns.value = data.map((item) => ({
         event:{
@@ -58,6 +48,34 @@ export const useHome = () => {
     }
   };
 
+  const fetchNextHoliday = async () => {
+    holidayLoading.value = true;
+
+    try {
+      const { data } = await api.get('/holidays/next');
+
+      if (!data?.date) {
+        nextHoliday.value = null;
+        return;
+      }
+
+      const diffMs = new Date(data.date).getTime() - new Date().getTime();
+      const daysUntil = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+
+      nextHoliday.value = {
+        id: data.id,
+        name: data.name,
+        type: data.type,
+        date: data.date,
+        daysUntil,
+      };
+    } catch (err) {
+      console.log(err);
+    } finally {
+      holidayLoading.value = false;
+    }
+  };
+
   const openDeleteModal = (countDown: ICountDown) => {
     selectedCountDown.value = countDown;
     deleteModalOpen.value = true;
@@ -68,8 +86,8 @@ export const useHome = () => {
     deleteModalOpen.value = false;
   }
 
-  const openCreateAndEditModal = (countDown: ICountDown) => {
-    selectedCountDown.value = countDown;
+  const openCreateAndEditModal = (countDown?: ICountDown) => {
+    selectedCountDown.value = countDown ?? null;
     createAndEditModalOpen.value = true;
   }
   
@@ -82,8 +100,13 @@ export const useHome = () => {
     router.push({ path: '/count-down', state: { countDownId: countDown.event.id}})
   };
 
+  const onHolidayClick = (holiday: IHoliday) => {
+    router.push({ path: '/count-down', state: { holiday: JSON.parse(JSON.stringify(holiday)) } })
+  };
+
   onMounted(() => {
     fetchCountDowns();
+    fetchNextHoliday();
   });
 
   return {
@@ -91,6 +114,9 @@ export const useHome = () => {
     loading,
     error,
     fetchCountDowns,
+
+    nextHoliday,
+    holidayLoading,
 
     createAndEditModalOpen,
     openCreateAndEditModal,
@@ -101,6 +127,7 @@ export const useHome = () => {
     openDeleteModal,
     closeDeleteModal,
 
-    onCardClick
+    onCardClick,
+    onHolidayClick
   }
 }

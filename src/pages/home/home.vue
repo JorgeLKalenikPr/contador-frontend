@@ -1,12 +1,11 @@
-<script setup>
+<script setup lang="ts">
 import Button from '@/components/button.vue';
 import { useHome } from './use-home';
-import { utilsDate } from '@/_common/functions/utils-date';
-import { Pencil, Plus, RefreshCcw, Trash2 } from '@lucide/vue';
-import Modal from '@/components/modal.vue';
+import { Plus } from '@lucide/vue';
 import CountDownCard from './components/count-down-card.vue';
 import CreateAndEditCountDownModal from './components/create-and-edit-count-down-modal/create-and-edit-count-down-modal.vue';
 import DeleteCountDownModal from './components/delete-count-down-modal/delete-count-down-modal.vue';
+import HolidayCard from './components/holiday-card/holiday-card.vue';
 
 const { 
   closeCreateAndEditModal,
@@ -17,10 +16,13 @@ const {
   openCreateAndEditModal,
   selectedCountDown,
 
+  nextHoliday,
+
   closeDeleteModal,
   deleteModalOpen,
   openDeleteModal,
-  onCardClick
+  onCardClick,
+  onHolidayClick
 } = useHome();
 
 </script>
@@ -39,21 +41,15 @@ const {
             <Plus/>
             Cadastrar
           </Button>
-          <Button 
-            variant="outline"
-            class="flex gap-4"
-            @action="fetchCountDowns()"
-          >
-            <RefreshCcw />
-            Atualizar
-          </Button>
         </div>
       </div>
 
       <div v-if="loading" class="text-center py-8">Carregando...</div>
 
       <div v-else class="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-        <div v-for="countDown in countDowns" :key="countDown.id">
+        <HolidayCard v-if="nextHoliday" :holiday="nextHoliday" :on-card-click="onHolidayClick" />
+
+        <div v-for="countDown in countDowns" :key="countDown.event.id">
           <CountDownCard 
             :count-down="countDown" 
             :open-create-and-edit-modal="openCreateAndEditModal" 
@@ -63,7 +59,7 @@ const {
         </div>
  
         <div @click="openCreateAndEditModal()" class="min-h-80 flex items-center justify-center rounded-xl cursor-pointer border border-dashed hover:bg-default-hover ">
-          <Plus size="64"/>
+          <Plus :size="64"/>
         </div>
       </div>
     </div>
@@ -77,7 +73,7 @@ const {
   />
 
   <DeleteCountDownModal
-    v-if="deleteModalOpen"
+    v-if="deleteModalOpen && selectedCountDown"
     :close-delete-modal="closeDeleteModal"
     :delete-modal-open="deleteModalOpen"
     :selected-count-down="selectedCountDown"

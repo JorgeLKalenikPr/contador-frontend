@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import Button from '@/components/button.vue';
 import { ArrowLeftToLine } from '@lucide/vue';
 import { useNotFound } from './use-not-found';

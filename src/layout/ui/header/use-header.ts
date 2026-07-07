@@ -1,49 +1,30 @@
-import { api } from '@/_common/api/api';
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 
 export const useHeader = () => {
   const router = useRouter();
+  const route = useRoute();
 
-  const email = ref<string>('');
-  const loading = ref<boolean>(false);
-  const error = ref<string>('');
+  const userEmail = ref<string | null>(localStorage.getItem('userEmail'));
 
-  const login = async () => {
-    if (!email.value) return;
+  watch(() => route.fullPath, () => {
+    userEmail.value = localStorage.getItem('userEmail');
+  });
 
-    loading.value = true;
-    error.value = '';
-
-    try {
-      const { data: user } = await api.post('/users/login', {
-        email: email.value,
-      });
-
-      localStorage.setItem('userId', String(user.id));
-      localStorage.setItem('userEmail', user.email);
-
-      email.value = '';
-      router.push('/');
-    } catch (err) {
-      error.value = 'Usuário não encontrado';
-      console.log(err);
-    } finally {
-      loading.value = false;
-    }
+  const goToLogin = () => {
+    router.push('/login');
   };
 
   const logOut = () => {
     localStorage.removeItem('userId');
     localStorage.removeItem('userEmail');
-    router.push('/');
+    userEmail.value = null;
+    router.push('/login');
   };
 
   return {
-    email,
-    loading,
-    error,
-    login,
-    logOut,
+    userEmail,
+    goToLogin,
+    logOut
   };
 };

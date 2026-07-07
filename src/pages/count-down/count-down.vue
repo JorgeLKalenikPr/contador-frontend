@@ -14,6 +14,11 @@ const {
   selectedValue,
   selectUnit,
 
+  isEditable,
+  displayName,
+  displayDescription,
+  displayDate,
+
   editModalOpen,
   openEditModal,
   closeEditModal,
@@ -33,16 +38,16 @@ const {
     <div v-else class="flex flex-col items-center gap-4">
       <div class="w-full flex justify-between p-10">
         <div class="flex flex-col w-full gap-2">
-          <h1 class="text-2xl font-bold">{{ countDown?.event.name }}</h1>
-          <h2 class="">{{ countDown?.event.description }}</h2>
+          <h1 class="text-2xl font-bold">{{ displayName }}</h1>
+          <h2 class="">{{ displayDescription }}</h2>
         </div>
 
         <div class="flex items-start gap-4">
           <h1 class="text-xl">
-            {{ utilsDate.formatToDefault(countDown?.event.date ?? new Date().toString()) }}
+            {{ utilsDate.formatToDefault(displayDate ?? new Date().toString()) }}
           </h1>
-          <button type="button" @click="openEditModal()">
-            <Pencil size='18' />
+          <button v-if="isEditable" type="button" @click="openEditModal()">
+            <Pencil :size='18' />
           </button>
         </div>
       </div>
@@ -73,7 +78,7 @@ const {
   </div>
 
   <CreateAndEditCountDownModal
-    v-if="editModalOpen && countDown"
+    v-if="isEditable && editModalOpen && countDown"
     :close-create-and-edit-modal="closeEditModal"
     :create-and-edit-modal-open="editModalOpen"
     :selected-count-down="countDown"
